@@ -6,6 +6,8 @@ export default function HandMoves() {
   const { videoRef, canvasRef } = useHandGestures({
     onScrollUp: () => window.scrollBy({ top: -600, behavior: "smooth" }),
     onScrollDown: () => window.scrollBy({ top: 600, behavior: "smooth" }),
+    onNextPage: () => window.history.forward(),
+    onPrevPage: () => window.history.back(),
   });
 
   return (
