@@ -165,7 +165,7 @@ export function useHandGestures({
       const isPinkyUp = pinkyTip.y < pinkyMCP.y - 0.02;
 
       // Debug logging for fist detection
-      const isFist = !isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp;
+      const isFist = isFistGesture(lm);
 
       // ☝ One finger (index only) → Scroll up
       if (isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) {
@@ -225,6 +225,25 @@ export function useHandGestures({
       }
     }
 
+    function isFistGesture(lm: any) {
+      // For each finger: check if tip is close to its MCP joint
+      function fingerFolded(tipIndex: number, mcpIndex: number) {
+        const tip = lm[tipIndex];
+        const mcp = lm[mcpIndex];
+        const dist = Math.hypot(tip.x - mcp.x, tip.y - mcp.y);
+
+        // Adjust threshold experimentally (0.07–0.12 usually works)
+        return dist < 0.4;
+      }
+
+      const indexFolded = fingerFolded(8, 5); // index tip vs MCP
+      const middleFolded = fingerFolded(12, 9); // middle tip vs MCP
+      const ringFolded = fingerFolded(16, 13); // ring tip vs MCP
+      const pinkyFolded = fingerFolded(20, 17); // pinky tip vs MCP
+
+      return indexFolded && middleFolded && ringFolded && pinkyFolded;
+    }
+
     // ---------------- VERTICAL SCROLL ----------------
     function handleVerticalScroll(
       lm: any,
@@ -275,7 +294,7 @@ export function useHandGestures({
 
       const lastPos = lastXRef.current;
       const now = Date.now();
-      const horizontalThreshold = 0.15;
+      const horizontalThreshold = 0.2;
 
       if (lastPos !== null && now - lastActionRef.current > COOLDOWN) {
         const dx = xNorm - lastPos;
