@@ -1,6 +1,7 @@
 "use client";
 
 import { useHandGestures } from "@/hooks/useHandGestures";
+import { useEffect, useState } from "react";
 
 type HandGesturesProps = {
   scrollUpAmount?: number;
@@ -17,6 +18,9 @@ export default function HandGestures({
   onPrevPage,
   showHandGestures = false,
 }: HandGesturesProps) {
+  const [showHandLandMarkModel, setshowHandLandMarkModel] =
+    useState<boolean>(false);
+
   const { videoRef, canvasRef } = useHandGestures({
     scrollUpAmount,
     scrollDownAmount,
@@ -24,13 +28,17 @@ export default function HandGestures({
     onPrevPage: onPrevPage,
   });
 
+  useEffect(() => {
+    setshowHandLandMarkModel(showHandGestures);
+  }, [onNextPage, onPrevPage]);
+
   return (
-    <div className={showHandGestures ? "block" : "hidden"}>
+    <div className={showHandLandMarkModel ? "block" : "hidden"}>
       <video ref={videoRef} autoPlay playsInline style={{ display: "none" }} />
       <canvas
         ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={window?.innerWidth}
+        height={window?.innerHeight}
         style={{
           position: "fixed",
           top: 0,

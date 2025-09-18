@@ -67,11 +67,6 @@ export function useHandGestures({
       initializedRef.current = true;
 
       try {
-        const loadingToastId = toast.info(
-          "Initializing hand gesture detection...",
-          { autoClose: false, closeOnClick: false }
-        );
-
         // Load Mediapipe WASM backend
         const vision = await FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
@@ -96,6 +91,11 @@ export function useHandGestures({
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480 },
         });
+
+        const loadingToastId = toast.info(
+          "Initializing hand gesture detection...",
+          { autoClose: false, closeOnClick: false }
+        );
 
         videoRef.current.srcObject = stream;
         // When video is ready, start the loop
