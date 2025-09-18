@@ -20,6 +20,7 @@ export default function HandGestures({
 }: HandGesturesProps) {
   const [showHandLandMarkModel, setshowHandLandMarkModel] =
     useState<boolean>(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   const { videoRef, canvasRef } = useHandGestures({
     scrollUpAmount,
@@ -30,15 +31,22 @@ export default function HandGestures({
 
   useEffect(() => {
     setshowHandLandMarkModel(showHandGestures);
-  }, [onNextPage, onPrevPage]);
+  }, [showHandGestures]);
+
+  useEffect(() => {
+    setCanvasSize({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+  }, []);
 
   return (
     <div className={showHandLandMarkModel ? "block" : "hidden"}>
       <video ref={videoRef} autoPlay playsInline style={{ display: "none" }} />
       <canvas
         ref={canvasRef}
-        width={window?.innerWidth}
-        height={window?.innerHeight}
+        width={canvasSize.width}
+        height={canvasSize.height}
         style={{
           position: "fixed",
           top: 0,
