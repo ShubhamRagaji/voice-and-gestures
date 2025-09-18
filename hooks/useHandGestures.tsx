@@ -8,20 +8,21 @@ import {
   DrawingUtils,
 } from "@mediapipe/tasks-vision";
 import { domToPng } from "modern-screenshot";
+import { toast } from "react-toastify";
 
 // Callback types you can pass into the hook
 type GestureCallbacks = {
-  onScrollUp?: () => void;
-  onScrollDown?: () => void;
   onNextPage?: () => void;
   onPrevPage?: () => void;
+  scrollUpAmount?: number;
+  scrollDownAmount?: number;
 };
 
 export function useHandGestures({
-  onScrollUp,
-  onScrollDown,
   onNextPage,
   onPrevPage,
+  scrollUpAmount = 400,
+  scrollDownAmount = -400,
 }: GestureCallbacks) {
   // Refs for video and canvas
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -66,6 +67,11 @@ export function useHandGestures({
       initializedRef.current = true;
 
       try {
+        const loadingToastId = toast.info(
+          "Initializing hand gesture detection...",
+          { autoClose: false, closeOnClick: false }
+        );
+
         // Load Mediapipe WASM backend
         const vision = await FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
@@ -93,7 +99,33 @@ export function useHandGestures({
 
         videoRef.current.srcObject = stream;
         // When video is ready, start the loop
-        videoRef.current.onloadeddata = () => loop();
+        videoRef.current.onloadeddata = () => {
+          toast.dismiss(loadingToastId);
+
+          toast.success(
+            "Camera initialized! Hand gesture detection is now active.",
+            {
+              autoClose: 3000,
+              onClose: () => {
+                // Show gesture instructions after success toast closes
+                toast.info(
+                  <div>
+                    <div className="pb-2">👆 One finger: Scroll up</div>
+                    <div className="pb-2">✌️ Two fingers: Scroll down</div>
+                    <div className="pb-2">🖐 Four fingers: Swipe</div>
+                    <div className="pb-2">✊ Fist (hold 2.5s): Screenshot</div>
+                  </div>,
+
+                  {
+                    autoClose: 8000,
+                    pauseOnHover: true,
+                  }
+                );
+              },
+            }
+          );
+          loop();
+        };
       } catch (error) {
         console.error("Failed to initialize hand tracking:", error);
       }
@@ -206,8 +238,8 @@ export function useHandGestures({
           console.log(`Fist hold time: ${holdTime}ms`); // Debug log
 
           if (holdTime >= FIST_HOLD_TIME) {
-            console.log("Taking screenshot..."); // Debug log
-            handleScreenshot();
+            const captureScreenshot = toast.info("Taking screenshot..."); // Debug log
+            handleScreenshot(captureScreenshot);
             screenshotTakenRef.current = true; // Mark screenshot as taken
             // DON'T reset fistHoldStartRef.current here - let it stay until gesture changes
           }
@@ -253,11 +285,11 @@ export function useHandGestures({
         const deltaY = avgY - lastY;
 
         if (isIndexUp && isMiddleUp && deltaY < -threshold) {
-          onScrollDown?.();
+          window.scrollBy({ top: scrollUpAmount, behavior: "smooth" });
           lastActionRef.current = now;
           historyYRef.current = [];
         } else if (isIndexUp && !isMiddleUp && deltaY > threshold) {
-          onScrollUp?.();
+          window.scrollBy({ top: scrollDownAmount, behavior: "smooth" });
           lastActionRef.current = now;
           historyYRef.current = [];
         }
@@ -284,8 +316,8 @@ export function useHandGestures({
         const dx = xNorm - lastPos;
 
         if (Math.abs(dx) > horizontalThreshold) {
-          if (dx > 0) onPrevPage?.();
-          else onNextPage?.();
+          if (dx > 0) onPrevPage?.() || window.history.back();
+          else onNextPage?.() || window.history.forward();
 
           lastActionRef.current = now;
           historyXRef.current = [];
@@ -294,7 +326,7 @@ export function useHandGestures({
     }
 
     // ---------------- SCREENSHOT ----------------
-    async function handleScreenshot() {
+    async function handleScreenshot(captureScreenshot: any) {
       try {
         const video = videoRef.current;
         const canvas = canvasRef.current;
@@ -303,138 +335,47 @@ export function useHandGestures({
         if (video) video.style.visibility = "hidden";
         if (canvas) canvas.style.visibility = "hidden";
 
-        // Small delay to ensure elements are hidden
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Method: Create a viewport overlay that captures only what's visible
-        const viewportOverlay = document.createElement("div");
-        viewportOverlay.id = "screenshot-viewport-overlay";
-        viewportOverlay.style.position = "fixed";
-        viewportOverlay.style.top = "0";
-        viewportOverlay.style.left = "0";
-        viewportOverlay.style.width = "100vw";
-        viewportOverlay.style.height = "100vh";
-        viewportOverlay.style.zIndex = "999999";
-        viewportOverlay.style.pointerEvents = "none";
-        viewportOverlay.style.backgroundColor = "transparent";
-        viewportOverlay.style.overflow = "hidden";
+        // Get current scroll position
+        const scrollX =
+          window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollY =
+          window.pageYOffset || document.documentElement.scrollTop;
 
-        // Get all elements and check which ones are visible in viewport
-        const allElements = Array.from(document.body.getElementsByTagName("*"));
-        const viewportRect = {
-          top: 0,
-          left: 0,
-          bottom: window.innerHeight,
-          right: window.innerWidth,
-        };
+        console.log(`Current scroll position: x=${scrollX}, y=${scrollY}`);
 
-        // Clone all visible elements into the overlay
-        allElements.forEach((element) => {
-          // Skip video, canvas, and our overlay
-          if (
-            element === video ||
-            element === canvas ||
-            element === viewportOverlay
-          )
-            return;
-          if (element.tagName === "VIDEO" || element.tagName === "CANVAS")
-            return;
-          if (element.tagName === "SCRIPT" || element.tagName === "STYLE")
-            return;
-
-          const rect = element.getBoundingClientRect();
-
-          // Check if element is visible in current viewport
-          const isVisible = !(
-            rect.bottom <= 0 ||
-            rect.right <= 0 ||
-            rect.top >= window.innerHeight ||
-            rect.left >= window.innerWidth ||
-            rect.width === 0 ||
-            rect.height === 0
-          );
-
-          if (isVisible) {
-            const computedStyle = window.getComputedStyle(element);
-
-            // Only clone leaf elements or elements with background/text content
-            const hasVisualContent =
-              (computedStyle.backgroundColor !== "rgba(0, 0, 0, 0)" &&
-                computedStyle.backgroundColor !== "transparent") ||
-              element.textContent?.trim() ||
-              computedStyle.backgroundImage !== "none" ||
-              computedStyle.border !== "0px none rgb(0, 0, 0)";
-
-            if (hasVisualContent || element.children.length === 0) {
-              try {
-                const clone = element.cloneNode(true) as HTMLElement;
-
-                // Position the clone exactly as it appears in viewport
-                clone.style.position = "absolute";
-                clone.style.left = `${Math.max(0, rect.left)}px`;
-                clone.style.top = `${Math.max(0, rect.top)}px`;
-                clone.style.width = `${Math.min(
-                  rect.width,
-                  window.innerWidth - Math.max(0, rect.left)
-                )}px`;
-                clone.style.height = `${Math.min(
-                  rect.height,
-                  window.innerHeight - Math.max(0, rect.top)
-                )}px`;
-
-                // Copy essential styles
-                clone.style.backgroundColor = computedStyle.backgroundColor;
-                clone.style.color = computedStyle.color;
-                clone.style.fontSize = computedStyle.fontSize;
-                clone.style.fontFamily = computedStyle.fontFamily;
-                clone.style.fontWeight = computedStyle.fontWeight;
-                clone.style.textAlign = computedStyle.textAlign;
-                clone.style.padding = computedStyle.padding;
-                clone.style.margin = "0";
-                clone.style.border = computedStyle.border;
-                clone.style.borderRadius = computedStyle.borderRadius;
-                clone.style.backgroundImage = computedStyle.backgroundImage;
-                clone.style.backgroundSize = computedStyle.backgroundSize;
-                clone.style.backgroundPosition =
-                  computedStyle.backgroundPosition;
-                clone.style.backgroundRepeat = computedStyle.backgroundRepeat;
-
-                // Reset transform and other properties that might interfere
-                clone.style.transform = "none";
-                clone.style.transition = "none";
-                clone.style.animation = "none";
-                clone.style.boxShadow = computedStyle.boxShadow;
-                clone.style.overflow = "hidden";
-                clone.style.zIndex = "auto";
-
-                viewportOverlay.appendChild(clone);
-              } catch (cloneError) {
-                console.warn("Failed to clone element:", element, cloneError);
-              }
-            }
-          }
-        });
-
-        // Add the overlay to document
-        document.body.appendChild(viewportOverlay);
-
-        // Wait for rendering
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        // Use modern-screenshot to capture the overlay
-        const dataUrl = await domToPng(viewportOverlay, {
+        // Method 1: Using transform to offset scroll position
+        const dataUrl = await domToPng(document.body, {
           width: window.innerWidth,
           height: window.innerHeight,
           backgroundColor: "#ffffff",
           scale: 1,
+          // Offset by current scroll position
           style: {
-            margin: "0",
-            padding: "0",
+            transform: `translate(-${scrollX}px, -${scrollY}px)`,
+            transformOrigin: "top left",
+          },
+          filter: (node) => {
+            if (node === video || node === canvas) return false;
+
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+
+              if (
+                ["VIDEO", "CANVAS", "SCRIPT", "STYLE"].includes(element.tagName)
+              ) {
+                return false;
+              }
+
+              if (element.classList?.contains("Toastify__toast-container")) {
+                return false;
+              }
+            }
+
+            return true;
           },
         });
-
-        // Clean up overlay
-        document.body.removeChild(viewportOverlay);
 
         // Create download link
         const link = document.createElement("a");
@@ -445,81 +386,22 @@ export function useHandGestures({
         link.click();
         document.body.removeChild(link);
 
-        console.log("Modern-screenshot viewport capture completed!");
+        toast.dismiss(captureScreenshot);
+        toast.success("Screenshot saved successfully!");
 
         // Restore video/canvas visibility
         if (video) video.style.visibility = "visible";
         if (canvas) canvas.style.visibility = "visible";
       } catch (err) {
-        console.error("Modern-screenshot failed:", err);
+        console.error("Screenshot failed:", err);
 
-        // Fallback: Try simpler approach with modern-screenshot
-        try {
-          console.log("Trying simplified modern-screenshot approach...");
-
-          const video = videoRef.current;
-          const canvas = canvasRef.current;
-
-          // Find the element that's most visible in current viewport
-          let mostVisibleElement = document.body;
-          let maxVisibleArea = 0;
-
-          const allDivs = document.querySelectorAll("div");
-          allDivs.forEach((div) => {
-            const rect = div.getBoundingClientRect();
-            const visibleArea =
-              Math.max(
-                0,
-                Math.min(rect.bottom, window.innerHeight) -
-                  Math.max(rect.top, 0)
-              ) *
-              Math.max(
-                0,
-                Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0)
-              );
-
-            if (visibleArea > maxVisibleArea) {
-              maxVisibleArea = visibleArea;
-              mostVisibleElement = div;
-            }
-          });
-
-          console.log("Capturing most visible element:", mostVisibleElement);
-
-          const dataUrl = await domToPng(mostVisibleElement, {
-            backgroundColor: "#ffffff",
-            scale: 1,
-            filter: (node: Node) => {
-              if (node === video || node === canvas) return false;
-
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                const element = node as Element;
-                if (element.tagName === "VIDEO" || element.tagName === "CANVAS")
-                  return false;
-              }
-
-              return true;
-            },
-          });
-
-          const link = document.createElement("a");
-          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-          link.download = `element-screenshot-${timestamp}.png`;
-          link.href = dataUrl;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          console.log("Fallback element screenshot completed!");
-        } catch (fallbackErr) {
-          console.error("Fallback also failed:", fallbackErr);
-        }
-
-        // Ensure video/canvas are restored even on error
         const video = videoRef.current;
         const canvas = canvasRef.current;
         if (video) video.style.visibility = "visible";
         if (canvas) canvas.style.visibility = "visible";
+
+        toast.dismiss(captureScreenshot);
+        toast.error("Screenshot failed. Please try again.");
       }
     }
 
@@ -531,7 +413,7 @@ export function useHandGestures({
         const dist = Math.hypot(tip.x - mcp.x, tip.y - mcp.y);
 
         // Adjust threshold experimentally (0.07–0.12 usually works)
-        return dist < 0.4;
+        return dist < 0.1;
       }
 
       const indexFolded = fingerFolded(8, 5); // index tip vs MCP
@@ -557,7 +439,7 @@ export function useHandGestures({
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [onScrollUp, onScrollDown, onNextPage, onPrevPage]);
+  }, [onNextPage, onPrevPage]);
 
   // Expose refs
   return { videoRef, canvasRef };

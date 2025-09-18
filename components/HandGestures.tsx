@@ -2,16 +2,30 @@
 
 import { useHandGestures } from "@/hooks/useHandGestures";
 
-export default function HandGestures() {
+type HandGesturesProps = {
+  scrollUpAmount?: number;
+  scrollDownAmount?: number;
+  onNextPage?: () => void;
+  onPrevPage?: () => void;
+  showHandGestures?: boolean;
+};
+
+export default function HandGestures({
+  scrollUpAmount,
+  scrollDownAmount,
+  onNextPage,
+  onPrevPage,
+  showHandGestures = false,
+}: HandGesturesProps) {
   const { videoRef, canvasRef } = useHandGestures({
-    onScrollUp: () => window.scrollBy({ top: -400, behavior: "smooth" }),
-    onScrollDown: () => window.scrollBy({ top: 400, behavior: "smooth" }),
-    onNextPage: () => window.history.forward(),
-    onPrevPage: () => window.history.back(),
+    scrollUpAmount,
+    scrollDownAmount,
+    onNextPage: onNextPage,
+    onPrevPage: onPrevPage,
   });
 
   return (
-    <div className="opacity-0">
+    <div className={showHandGestures ? "block" : "hidden"}>
       <video ref={videoRef} autoPlay playsInline style={{ display: "none" }} />
       <canvas
         ref={canvasRef}
