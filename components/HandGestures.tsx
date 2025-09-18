@@ -31,6 +31,11 @@ export default function HandGestures({
 
   useEffect(() => {
     setshowHandLandMarkModel(showHandGestures);
+
+    // restore the scroll position
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
   }, [showHandGestures]);
 
   useEffect(() => {

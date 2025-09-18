@@ -9,6 +9,7 @@ import {
 } from "@mediapipe/tasks-vision";
 import { domToPng } from "modern-screenshot";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
 // Callback types you can pass into the hook
 type GestureCallbacks = {
@@ -27,6 +28,7 @@ export function useHandGestures({
   // Refs for video and canvas
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const router = useRouter();
 
   // Hand landmark model instance
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
@@ -107,6 +109,12 @@ export function useHandGestures({
             {
               autoClose: 3000,
               onClose: () => {
+                let alreadyShown = sessionStorage.getItem(
+                  "gestureInstructionsShown"
+                );
+
+                if (alreadyShown === "true") return;
+
                 // Show gesture instructions after success toast closes
                 toast.info(
                   <div>
@@ -115,12 +123,15 @@ export function useHandGestures({
                     <div className="pb-2">🖐 Four fingers: Swipe</div>
                     <div className="pb-2">✊ Fist (hold 2.5s): Screenshot</div>
                   </div>,
-
                   {
                     autoClose: 8000,
                     pauseOnHover: true,
                   }
                 );
+
+                if (alreadyShown !== "true") {
+                  sessionStorage.setItem("gestureInstructionsShown", "true");
+                }
               },
             }
           );
@@ -316,8 +327,8 @@ export function useHandGestures({
         const dx = xNorm - lastPos;
 
         if (Math.abs(dx) > horizontalThreshold) {
-          if (dx > 0) onPrevPage?.() || window.history.back();
-          else onNextPage?.() || window.history.forward();
+          if (dx > 0) onPrevPage?.() || router.back();
+          else onNextPage?.() || router.forward();
 
           lastActionRef.current = now;
           historyXRef.current = [];
