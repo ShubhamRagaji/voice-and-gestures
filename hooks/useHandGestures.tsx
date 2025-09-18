@@ -49,7 +49,7 @@ export function useHandGestures({
   // ---------------- Screenshot logic ----------------
   const fistHoldStartRef = useRef<number | null>(null); // track fist hold start
   const screenshotTakenRef = useRef<boolean>(false); // NEW: flag to track if screenshot was taken for current fist
-  const FIST_HOLD_TIME = 2000; // 2 seconds hold for screenshot
+  const FIST_HOLD_TIME = 2500; // 2.5 seconds hold for screenshot
 
   // Helper to add new value into history (keeps max length)
   function pushHistory(hist: number[], value: number) {
@@ -159,10 +159,10 @@ export function useHandGestures({
       const pinkyMCP = lm[17]; // Added for pinky
 
       // Check which fingers are raised - improved detection
-      const isIndexUp = indexTip.y < indexMCP.y - 0.02; // Added small threshold
-      const isMiddleUp = middleTip.y < middleMCP.y - 0.02;
-      const isRingUp = ringTip.y < ringMCP.y - 0.02;
-      const isPinkyUp = pinkyTip.y < pinkyMCP.y - 0.02;
+      const isIndexUp = indexTip.y < indexMCP.y; // Added small threshold
+      const isMiddleUp = middleTip.y < middleMCP.y;
+      const isRingUp = ringTip.y < ringMCP.y;
+      const isPinkyUp = pinkyTip.y < pinkyMCP.y;
 
       // Debug logging for fist detection
       const isFist = isFistGesture(lm);
@@ -225,25 +225,6 @@ export function useHandGestures({
       }
     }
 
-    function isFistGesture(lm: any) {
-      // For each finger: check if tip is close to its MCP joint
-      function fingerFolded(tipIndex: number, mcpIndex: number) {
-        const tip = lm[tipIndex];
-        const mcp = lm[mcpIndex];
-        const dist = Math.hypot(tip.x - mcp.x, tip.y - mcp.y);
-
-        // Adjust threshold experimentally (0.07–0.12 usually works)
-        return dist < 0.4;
-      }
-
-      const indexFolded = fingerFolded(8, 5); // index tip vs MCP
-      const middleFolded = fingerFolded(12, 9); // middle tip vs MCP
-      const ringFolded = fingerFolded(16, 13); // ring tip vs MCP
-      const pinkyFolded = fingerFolded(20, 17); // pinky tip vs MCP
-
-      return indexFolded && middleFolded && ringFolded && pinkyFolded;
-    }
-
     // ---------------- VERTICAL SCROLL ----------------
     function handleVerticalScroll(
       lm: any,
@@ -292,9 +273,12 @@ export function useHandGestures({
 
       pushHistory(historyXRef.current, xNorm);
 
-      const lastPos = lastXRef.current;
+      const lastPos =
+        historyXRef.current.length > 1
+          ? historyXRef.current[historyXRef.current.length - 2]
+          : null;
       const now = Date.now();
-      const horizontalThreshold = 0.2;
+      const horizontalThreshold = 0.16;
 
       if (lastPos !== null && now - lastActionRef.current > COOLDOWN) {
         const dx = xNorm - lastPos;
@@ -307,8 +291,6 @@ export function useHandGestures({
           historyXRef.current = [];
         }
       }
-
-      lastXRef.current = xNorm;
     }
 
     // ---------------- SCREENSHOT ----------------
@@ -539,6 +521,25 @@ export function useHandGestures({
         if (video) video.style.visibility = "visible";
         if (canvas) canvas.style.visibility = "visible";
       }
+    }
+
+    function isFistGesture(lm: any) {
+      // For each finger: check if tip is close to its MCP joint
+      function fingerFolded(tipIndex: number, mcpIndex: number) {
+        const tip = lm[tipIndex];
+        const mcp = lm[mcpIndex];
+        const dist = Math.hypot(tip.x - mcp.x, tip.y - mcp.y);
+
+        // Adjust threshold experimentally (0.07–0.12 usually works)
+        return dist < 0.4;
+      }
+
+      const indexFolded = fingerFolded(8, 5); // index tip vs MCP
+      const middleFolded = fingerFolded(12, 9); // middle tip vs MCP
+      const ringFolded = fingerFolded(16, 13); // ring tip vs MCP
+      const pinkyFolded = fingerFolded(20, 17); // pinky tip vs MCP
+
+      return indexFolded && middleFolded && ringFolded && pinkyFolded;
     }
 
     // Start model

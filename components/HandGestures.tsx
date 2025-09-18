@@ -11,7 +11,7 @@ export default function HandGestures() {
   });
 
   return (
-    <>
+    <div className="opacity-0">
       <video ref={videoRef} autoPlay playsInline style={{ display: "none" }} />
       <canvas
         ref={canvasRef}
@@ -27,6 +27,6 @@ export default function HandGestures() {
           zIndex: 9999,
         }}
       />
-    </>
+    </div>
   );
 }
