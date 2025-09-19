@@ -59,9 +59,9 @@ export function useHandGestures({
     x: [],
     y: [],
   });
-  const SMOOTHING_BUFFER_SIZE = 3;
+  const SMOOTHING_BUFFER_SIZE = 10;
   const cursorElementRef = useRef<HTMLDivElement | null>(null);
-  const CURSOR_SENSITIVITY = 1.5; // Reduced sensitivity for better control
+  const CURSOR_SENSITIVITY = 3.2; // Reduced sensitivity for better control
 
   // Helper to add new value into history (keeps max length)
   function pushHistory(hist: number[], value: number) {
@@ -290,7 +290,7 @@ export function useHandGestures({
         fistHoldStartRef.current = null;
         screenshotTakenRef.current = false;
       }
-      // ✊ Fist (all fingers down) → screenshot after 2s hold
+      // ✊ Fist (all fingers down) → screenshot after 2.5s hold
       else if (isFist) {
         // Hide cursor for fist gestures
         if (cursorElementRef.current) {
