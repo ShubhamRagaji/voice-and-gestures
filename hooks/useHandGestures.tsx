@@ -54,14 +54,58 @@ export function useHandGestures({
   const screenshotTakenRef = useRef<boolean>(false); // NEW: flag to track if screenshot was taken for current fist
   const FIST_HOLD_TIME = 2500; // 2.5 seconds hold for screenshot
 
+  // ---------------- Cursor control logic ----------------
+  const smoothingBufferRef = useRef<{ x: number[]; y: number[] }>({
+    x: [],
+    y: [],
+  });
+  const SMOOTHING_BUFFER_SIZE = 3;
+  const cursorElementRef = useRef<HTMLDivElement | null>(null);
+  const CURSOR_SENSITIVITY = 1.5; // Reduced sensitivity for better control
+
   // Helper to add new value into history (keeps max length)
   function pushHistory(hist: number[], value: number) {
     hist.push(value);
     if (hist.length > HISTORY_MAX) hist.shift();
   }
 
+  // Helper for smoothing cursor movement
+  function addToSmoothingBuffer(x: number, y: number) {
+    smoothingBufferRef.current.x.push(x);
+    smoothingBufferRef.current.y.push(y);
+
+    if (smoothingBufferRef.current.x.length > SMOOTHING_BUFFER_SIZE) {
+      smoothingBufferRef.current.x.shift();
+    }
+    if (smoothingBufferRef.current.y.length > SMOOTHING_BUFFER_SIZE) {
+      smoothingBufferRef.current.y.shift();
+    }
+  }
+
+  function getSmoothedPosition() {
+    const xSum = smoothingBufferRef.current.x.reduce(
+      (sum, val) => sum + val,
+      0
+    );
+    const ySum = smoothingBufferRef.current.y.reduce(
+      (sum, val) => sum + val,
+      0
+    );
+
+    return {
+      x: xSum / smoothingBufferRef.current.x.length,
+      y: ySum / smoothingBufferRef.current.y.length,
+    };
+  }
+
   useEffect(() => {
     let animationId: number;
+
+    // Target the existing cursor element
+    const cursorElement = document.getElementById("custom-cursor");
+    if (cursorElement && cursorElement instanceof HTMLDivElement) {
+      cursorElementRef.current = cursorElement;
+    }
 
     // ---------------- INIT ----------------
     async function init() {
@@ -118,7 +162,9 @@ export function useHandGestures({
                 // Show gesture instructions after success toast closes
                 toast.info(
                   <div>
-                    <div className="pb-2">👆 One finger: Scroll up</div>
+                    <div className="pb-2">
+                      ☝️ Index finger only: Move cursor + scroll
+                    </div>
                     <div className="pb-2">✌️ Two fingers: Scroll down</div>
                     <div className="pb-2">🖐 Four fingers: Swipe</div>
                     <div className="pb-2">✊ Fist (hold 2.5s): Screenshot</div>
@@ -178,9 +224,13 @@ export function useHandGestures({
           // Process gestures
           processGestures(lm);
         } else {
-          // Reset fist timer and screenshot flag when no hand is detected
+          // Hide cursor and reset states when no hand is detected
+          if (cursorElementRef.current) {
+            cursorElementRef.current.style.display = "none";
+          }
           fistHoldStartRef.current = null;
           screenshotTakenRef.current = false; // RESET screenshot flag when hand disappears
+          smoothingBufferRef.current = { x: [], y: [] };
         }
       } catch (error) {
         console.error("Error in detection loop:", error);
@@ -212,13 +262,18 @@ export function useHandGestures({
 
       // ☝ One finger (index only) → Scroll up
       if (isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) {
+        // ☝ One finger → Original scroll logic + cursor movement
         handleVerticalScroll(lm, { isIndexUp, isMiddleUp: false });
-        // Reset fist-related flags when other gestures are detected
+        handleCursorMovement(lm); // Add cursor movement without interfering
         fistHoldStartRef.current = null;
         screenshotTakenRef.current = false;
       }
       // ✌ Two fingers (index + middle) → Scroll down
       else if (isIndexUp && isMiddleUp && !isRingUp && !isPinkyUp) {
+        // Hide cursor for two finger gestures
+        if (cursorElementRef.current) {
+          cursorElementRef.current.style.display = "none";
+        }
         handleVerticalScroll(lm, { isIndexUp, isMiddleUp: true });
         // Reset fist-related flags
         fistHoldStartRef.current = null;
@@ -226,6 +281,10 @@ export function useHandGestures({
       }
       // 🖐 Four fingers → Horizontal swipe
       else if (isIndexUp && isMiddleUp && isRingUp && isPinkyUp) {
+        // Hide cursor for four finger gestures
+        if (cursorElementRef.current) {
+          cursorElementRef.current.style.display = "none";
+        }
         handleHorizontalSwipe(lm);
         // Reset fist-related flags
         fistHoldStartRef.current = null;
@@ -233,6 +292,10 @@ export function useHandGestures({
       }
       // ✊ Fist (all fingers down) → screenshot after 2s hold
       else if (isFist) {
+        // Hide cursor for fist gestures
+        if (cursorElementRef.current) {
+          cursorElementRef.current.style.display = "none";
+        }
         console.log("Fist detected!"); // Debug log
 
         // If screenshot already taken for this fist gesture, do nothing
@@ -258,6 +321,10 @@ export function useHandGestures({
       }
       // ❌ No valid gesture → reset states
       else {
+        // Hide cursor for invalid gestures
+        if (cursorElementRef.current) {
+          cursorElementRef.current.style.display = "none";
+        }
         lastYRef.current = null;
         lastXRef.current = null;
         historyYRef.current = [];
@@ -265,6 +332,51 @@ export function useHandGestures({
         // Reset fist-related flags when no gesture is detected
         fistHoldStartRef.current = null;
         screenshotTakenRef.current = false;
+      }
+    }
+
+    // ---------------- CURSOR MOVEMENT ----------------
+    function handleCursorMovement(lm: any) {
+      const indexTip = lm[8];
+
+      // Direct mapping with sensitivity - simpler approach
+      // Flip X for natural movement, keep Y as is
+      let normalizedX = 1 - indexTip.x; // Flip X (0-1)
+      let normalizedY = indexTip.y; // Keep Y (0-1)
+
+      // Apply sensitivity by expanding the usable range
+      // Map from center outward with higher sensitivity
+      const centerX = 0.5;
+      const centerY = 0.5;
+
+      // Calculate distance from center
+      const deltaX = (normalizedX - centerX) * CURSOR_SENSITIVITY;
+      const deltaY = (normalizedY - centerY) * CURSOR_SENSITIVITY;
+
+      // Apply the delta to screen coordinates
+      const screenX = Math.max(
+        0,
+        Math.min(window.innerWidth - 1, (centerX + deltaX) * window.innerWidth)
+      );
+      const screenY = Math.max(
+        0,
+        Math.min(
+          window.innerHeight - 1,
+          (centerY + deltaY) * window.innerHeight
+        )
+      );
+
+      // Add to smoothing buffer
+      addToSmoothingBuffer(screenX, screenY);
+
+      // Get smoothed position
+      const smoothed = getSmoothedPosition();
+
+      // Show and update cursor position
+      if (cursorElementRef.current) {
+        cursorElementRef.current.style.display = "block";
+        cursorElementRef.current.style.left = `${smoothed.x - 8}px`; // Center the cursor (16px width / 2)
+        cursorElementRef.current.style.top = `${smoothed.y - 8}px`; // Center the cursor (16px height / 2)
       }
     }
 
@@ -342,9 +454,11 @@ export function useHandGestures({
         const video = videoRef.current;
         const canvas = canvasRef.current;
 
-        // Hide video/canvas temporarily
+        // Hide video/canvas/cursor temporarily
         if (video) video.style.visibility = "hidden";
         if (canvas) canvas.style.visibility = "hidden";
+        if (cursorElementRef.current)
+          cursorElementRef.current.style.display = "none";
 
         await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -368,7 +482,12 @@ export function useHandGestures({
             transformOrigin: "top left",
           },
           filter: (node) => {
-            if (node === video || node === canvas) return false;
+            if (
+              node === video ||
+              node === canvas ||
+              node === cursorElementRef.current
+            )
+              return false;
 
             if (node.nodeType === Node.ELEMENT_NODE) {
               const element = node as Element;
@@ -442,6 +561,11 @@ export function useHandGestures({
     return () => {
       if (animationId) {
         cancelAnimationFrame(animationId);
+      }
+
+      // Hide cursor element instead of removing it
+      if (cursorElementRef.current) {
+        cursorElementRef.current.style.display = "none";
       }
 
       // Clean up video stream

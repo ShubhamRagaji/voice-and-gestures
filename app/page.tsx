@@ -1,3 +1,6 @@
+"use client";
+import { toast } from "react-toastify";
+
 export default function HandsDemo() {
   return (
     <>
@@ -7,8 +10,14 @@ export default function HandsDemo() {
         <p className="text-white">Demo1</p>
         <p className="text-white">Demo1</p>
       </div>
-      <div className="h-[100vh] bg-gray-800 text-white">Demo2</div>
-      <div className="h-[100vh] bg-gray-900 text-white">Demo3</div>
+      <div className="h-[100vh] bg-gray-800 text-white">
+        <p>Demo2</p>
+        <button onClick={() => toast.info("Clickec")}>Click Me</button>
+      </div>
+      <div className="h-[100vh] bg-gray-900 text-white">
+        <p>Demo3</p>
+        <button onClick={() => toast.info("Other Clicked")}>Click Me</button>
+      </div>
       <div className="h-[100vh] bg-gray-950 text-white">Demo4</div>
     </>
   );
