@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# React Hand Gesture Control
 
-## Getting Started
+A powerful and intuitive React library that transforms web navigation through hand gesture recognition. Effortlessly scroll, swipe between pages, and take screenshots using simple hand movements, eliminating the need for a mouse or keyboard. Enhance your web applications with smooth, hands-free control and modern gesture-driven interaction.
 
-First, run the development server:
+---
+
+## ✅ Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install react-hand-gesture-control
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✅ Supported Gestures
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+☝️ **Index finger only** → Move cursor + scroll  
+✌️ **Two fingers - Index and middle** → Scroll down  
+🖐 **Four fingers pointing at the screen** → Swipe (Next / Previous)  
+✊ **Fist (hold 2.5s)** → Screenshot  
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
+## ✅ Usage Example
 
-To learn more about Next.js, take a look at the following resources:
+```js
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+import { HandGestureController } from "react-hand-gesture-control";
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+function App() {
+  const handleNextPage = () => {
+    console.log("Next page triggered");
+    // Your next page logic here
+  };
 
-## Deploy on Vercel
+  const handlePrevPage = () => {
+    console.log("Previous page triggered");
+    // Your previous page logic here
+  };
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+  return (
+    <div className="app">
+      <HandGestureController
+        scrollUpAmount={100}
+        scrollDownAmount={150}
+        onNextPage={handleNextPage}
+        onPrevPage={handlePrevPage}
+        customCursor={true}
+        showHandGestures={true}
+      />
+      
+      {/* Your app content */}
+      <div className="content">
+        <h1>Gesture-Controlled Interface</h1>
+        <p>Use hand gestures to navigate!</p>
+      </div>
+    </div>
+  );
+}
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+export default App;
+
+```
+
+## ✅ Props
+
+| Prop              | Type          | Default                    | Optional | Description |
+|-------------------|---------------|----------------------------|----------|-------------|
+| `scrollUpAmount`  | `number`      | `400`                      | Yes      | Amount of pixels to scroll up per gesture. |
+| `scrollDownAmount`| `number`      | `-400`                     | Yes      | Amount of pixels to scroll down per gesture. |
+| `onNextPage`      | `() => void`  | `window.history.forward()` | Yes      | Triggered on next page gesture. Defaults to navigating forward in browser history. |
+| `onPrevPage`      | `() => void`  | `window.history.back()`    | Yes      | Triggered on previous page gesture. Defaults to navigating backward in browser history. |
+| `showCursor`      | `boolean`     | `true`                     | Yes      | Show or hide the custom cursor. |
+| `customCursor`    | `ReactNode`   | `null`                     | Yes      | A custom React element (e.g., `<div>` or icon) to render as the gesture cursor. |
+| `showHandGestures`| `boolean`     | `true`                     | Yes      | Show or hide the gesture guide overlay. |
+
+## ✅ Requirements
+
+- **React 18+**  
+- **Modern browser with camera/webcam support**
