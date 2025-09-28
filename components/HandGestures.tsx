@@ -3,14 +3,29 @@
 import { useHandGestures } from "@/hooks/useHandGestures";
 import React, { useEffect, useState } from "react";
 
-type HandGesturesProps = {
+type BaseProps = {
   scrollUpAmount?: number;
   scrollDownAmount?: number;
   onNextPage?: () => void;
   onPrevPage?: () => void;
   showHandGestures?: boolean;
   customCursor?: React.ReactNode;
+  fistHoldTime?: number;
 };
+
+// Case 1: Cursor disabled → no sensitivity allowed
+type CursorDisabled = {
+  showCursor: false;
+  cursorSensitivity?: never;
+};
+
+// Case 2: Cursor enabled → sensitivity optional
+type CursorEnabled = {
+  showCursor?: true;
+  cursorSensitivity?: number;
+};
+
+type HandGesturesProps = BaseProps & (CursorDisabled | CursorEnabled);
 
 export default function HandGestures({
   scrollUpAmount,
@@ -18,6 +33,8 @@ export default function HandGestures({
   onNextPage,
   onPrevPage,
   customCursor,
+  cursorSensitivity,
+  fistHoldTime,
   showHandGestures = false,
 }: HandGesturesProps) {
   const [showHandLandMarkModel, setshowHandLandMarkModel] =
@@ -29,15 +46,12 @@ export default function HandGestures({
     scrollDownAmount,
     onNextPage: onNextPage,
     onPrevPage: onPrevPage,
+    cursorSensitivity: cursorSensitivity,
+    fistHoldTime: fistHoldTime,
   });
 
   useEffect(() => {
     setshowHandLandMarkModel(showHandGestures);
-
-    // restore the scroll position
-    if ("scrollRestoration" in history) {
-      history.scrollRestoration = "manual";
-    }
   }, [showHandGestures]);
 
   useEffect(() => {
@@ -46,6 +60,10 @@ export default function HandGestures({
       height: window.innerHeight,
     });
   }, []);
+
+  if (!window) {
+    return;
+  }
 
   return (
     <>

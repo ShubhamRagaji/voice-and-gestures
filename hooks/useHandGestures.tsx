@@ -1,6 +1,4 @@
 "use client";
-// Required in Next.js App Router so this hook runs on the client (browser), not server.
-
 import { useEffect, useRef } from "react";
 import {
   HandLandmarker,
@@ -17,6 +15,8 @@ type GestureCallbacks = {
   onPrevPage?: () => void;
   scrollUpAmount?: number;
   scrollDownAmount?: number;
+  cursorSensitivity?: number;
+  fistHoldTime?: number;
 };
 
 export function useHandGestures({
@@ -24,6 +24,8 @@ export function useHandGestures({
   onPrevPage,
   scrollUpAmount = 400,
   scrollDownAmount = -400,
+  cursorSensitivity = 3.2,
+  fistHoldTime = 2500,
 }: GestureCallbacks) {
   // Refs for video and canvas
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -52,7 +54,7 @@ export function useHandGestures({
   // ---------------- Screenshot logic ----------------
   const fistHoldStartRef = useRef<number | null>(null); // track fist hold start
   const screenshotTakenRef = useRef<boolean>(false); // NEW: flag to track if screenshot was taken for current fist
-  const FIST_HOLD_TIME = 2500; // 2.5 seconds hold for screenshot
+  const FIST_HOLD_TIME = fistHoldTime; // 2.5 seconds hold for screenshot
 
   // ---------------- Cursor control logic ----------------
   const smoothingBufferRef = useRef<{ x: number[]; y: number[] }>({
@@ -61,7 +63,7 @@ export function useHandGestures({
   });
   const SMOOTHING_BUFFER_SIZE = 10;
   const cursorElementRef = useRef<HTMLDivElement | null>(null);
-  const CURSOR_SENSITIVITY = 3.2; // Reduced sensitivity for better control
+  const CURSOR_SENSITIVITY = cursorSensitivity; // Reduced sensitivity for better control
 
   // Helper to add new value into history (keeps max length)
   function pushHistory(hist: number[], value: number) {
@@ -113,6 +115,11 @@ export function useHandGestures({
       initializedRef.current = true;
 
       try {
+        const loadingToastId = toast.info(
+          "Initializing hand gesture detection...",
+          { autoClose: false, closeOnClick: false }
+        );
+
         // Load Mediapipe WASM backend
         const vision = await FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
@@ -137,11 +144,6 @@ export function useHandGestures({
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480 },
         });
-
-        const loadingToastId = toast.info(
-          "Initializing hand gesture detection...",
-          { autoClose: false, closeOnClick: false }
-        );
 
         videoRef.current.srcObject = stream;
         // When video is ready, start the loop
@@ -552,6 +554,10 @@ export function useHandGestures({
       const pinkyFolded = fingerFolded(20, 17); // pinky tip vs MCP
 
       return indexFolded && middleFolded && ringFolded && pinkyFolded;
+    }
+
+    if (cursorElementRef.current) {
+      cursorElementRef.current.style.display = "none";
     }
 
     // Start model
