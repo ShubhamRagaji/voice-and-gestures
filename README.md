@@ -66,7 +66,6 @@ export default App;
 | `onPrevPage`        | `() => void` | `window.history.back()`    | Yes      | Triggered on previous page gesture. Defaults to navigating backward in browser history.                                 |
 | `showCursor`        | `boolean`    | `true`                     | Yes      | Show or hide the custom cursor.                                                                                         |
 | `customCursor`      | `ReactNode`  | `null`                     | Yes      | A custom React element (e.g., `<div>` or icon) to render as the gesture cursor. Works only when showCursor prop is true |
-| `showHandGestures`  | `boolean`    | `true`                     | Yes      | Show or hide the gesture guide overlay.                                                                                 |
 | `cursorSensitivity` | `number`     | `3.0`                      | Yes      | Use to handle cursor speed                                                                                              |
 | `fistHoldTime`      | `number`     | `2500`                     | Yes      | Duration (in milliseconds) the fist must be held before triggering a screenshot.                                        |
 

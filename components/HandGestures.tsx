@@ -8,7 +8,6 @@ type BaseProps = {
   scrollDownAmount?: number;
   onNextPage?: () => void;
   onPrevPage?: () => void;
-  showHandGestures?: boolean;
   customCursor?: React.ReactNode;
   fistHoldTime?: number;
 };
@@ -35,11 +34,12 @@ export default function HandGestures({
   customCursor,
   cursorSensitivity,
   fistHoldTime,
-  showHandGestures = false,
+  showCursor = true,
 }: HandGesturesProps) {
   const [showHandLandMarkModel, setshowHandLandMarkModel] =
     useState<boolean>(false);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [showCustomCursor, setshowCustomCursor] = useState(true);
 
   const { videoRef, canvasRef } = useHandGestures({
     scrollUpAmount,
@@ -51,15 +51,90 @@ export default function HandGestures({
   });
 
   useEffect(() => {
-    setshowHandLandMarkModel(showHandGestures);
-  }, [showHandGestures]);
-
-  useEffect(() => {
     setCanvasSize({
       width: window.innerWidth,
       height: window.innerHeight,
     });
+
+    if (showCursor === showCustomCursor) {
+      console.log("ifff");
+      sessionStorage.setItem("showCursor", String(true));
+    } else if (showCursor !== showCustomCursor) {
+      console.log("elseeee");
+      // if (!showCursor) {
+      //   sessionStorage.setItem("showCursor", String(true));
+      // } else {
+      //   sessionStorage.setItem("showCursor", String(false));
+      // }
+
+      if (sessionStorage.getItem("showCursor") === "true" && !showCursor) {
+        sessionStorage.setItem("showCursor", String(true));
+      } else {
+        sessionStorage.setItem("showCursor", String(false));
+      }
+    }
   }, []);
+
+  // useEffect(() => {
+  //   const stored = sessionStorage.getItem("showCursor");
+
+  //   if (showCursor === showCustomCursor) {
+  //     console.log("ifff");
+  //     if (!stored) {
+  //       console.log("new");
+  //       sessionStorage.setItem("showCursor", String(showCursor));
+  //       setshowCustomCursor(true);
+  //     } else {
+  //       console.log("el");
+  //       if (stored === "false") {
+  //         console.log("1");
+  //         sessionStorage.setItem("showCursor", "false");
+  //         setshowCustomCursor(false);
+
+  //         if (showCustomCursor) {
+  //           sessionStorage.setItem("showCursor", "true");
+  //           setshowCustomCursor(true);
+  //         }
+  //       } else {
+  //         console.log("2");
+  //         if (stored === "true" && showCustomCursor) {
+  //           console.log("2//1");
+  //           sessionStorage.setItem("showCursor", "false");
+  //           setshowCustomCursor(false);
+  //         } else {
+  //           console.log("2//2");
+  //           sessionStorage.setItem("showCursor", "true");
+  //           setshowCustomCursor(true);
+  //         }
+  //       }
+  //     }
+  //   } else if (showCursor !== showCustomCursor) {
+  //     console.log("else");
+  //     if (stored === "true") {
+  //       console.log("16");
+  //       sessionStorage.setItem("showCursor", "true");
+  //       setshowCustomCursor(true);
+
+  //       // if (!showCursor) {
+  //       //   sessionStorage.setItem("showCursor", "false");
+  //       //   setshowCustomCursor(false);
+  //       // }
+  //     } else {
+  //       console.log("20");
+  //       sessionStorage.setItem("showCursor", String(showCursor));
+  //       setshowCustomCursor(showCursor);
+  //     }
+  //   }
+
+  //   if (!showCustomCursor) {
+  //     console.log("inside");
+  //     const cursor = document.getElementById("custom-cursor");
+
+  //     if (cursor) {
+  //       cursor.style.opacity = "0";
+  //     }
+  //   }
+  // }, []);
 
   if (!window) {
     return;
@@ -67,7 +142,8 @@ export default function HandGestures({
 
   return (
     <>
-      <div className={showHandLandMarkModel ? "block" : "hidden"}>
+      {console.log(showCursor, showCustomCursor)}
+      <div style={{ opacity: 0 }}>
         <video
           ref={videoRef}
           autoPlay

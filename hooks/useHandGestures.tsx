@@ -31,6 +31,7 @@ export function useHandGestures({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const router = useRouter();
+  const showCursor = sessionStorage.getItem("showCursor") === "true";
 
   // Hand landmark model instance
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
@@ -103,23 +104,20 @@ export function useHandGestures({
   useEffect(() => {
     let animationId: number;
 
-    // Target the existing cursor element
-    const cursorElement = document.getElementById("custom-cursor");
-    if (cursorElement && cursorElement instanceof HTMLDivElement) {
-      cursorElementRef.current = cursorElement;
+    console.log(" if (showCursor) ", showCursor);
+    if (showCursor) {
+      // Target the existing cursor element
+      const cursorElement = document.getElementById("custom-cursor");
+      if (cursorElement && cursorElement instanceof HTMLDivElement) {
+        cursorElementRef.current = cursorElement;
+      }
     }
-
     // ---------------- INIT ----------------
     async function init() {
       if (initializedRef.current) return;
       initializedRef.current = true;
 
       try {
-        const loadingToastId = toast.info(
-          "Initializing hand gesture detection...",
-          { autoClose: false, closeOnClick: false }
-        );
-
         // Load Mediapipe WASM backend
         const vision = await FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
@@ -145,10 +143,17 @@ export function useHandGestures({
           video: { width: 640, height: 480 },
         });
 
+        const loadingToastId = toast.info(
+          "Initializing hand gesture detection...",
+          { autoClose: false, closeOnClick: false }
+        );
+
         videoRef.current.srcObject = stream;
         // When video is ready, start the loop
         videoRef.current.onloadeddata = () => {
-          toast.dismiss(loadingToastId);
+          setTimeout(() => {
+            toast.dismiss(loadingToastId);
+          }, 1000);
 
           toast.success(
             "Camera initialized! Hand gesture detection is now active.",
@@ -183,6 +188,7 @@ export function useHandGestures({
               },
             }
           );
+
           loop();
         };
       } catch (error) {
@@ -339,6 +345,8 @@ export function useHandGestures({
 
     // ---------------- CURSOR MOVEMENT ----------------
     function handleCursorMovement(lm: any) {
+      console.log("handleCurso", showCursor);
+      if (!showCursor) return;
       const indexTip = lm[8];
 
       // Direct mapping with sensitivity - simpler approach

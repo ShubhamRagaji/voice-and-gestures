@@ -31,7 +31,7 @@ export default function RootLayout({
       >
         {children}
         <ToastWrapper />
-        <HandGestures showCursor />
+        <HandGestures showCursor={false} />
       </body>
     </html>
   );
