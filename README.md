@@ -62,9 +62,9 @@ export default App;
 | ------------------- | ------------ | -------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `scrollUpAmount`    | `number`     | `400`                      | Yes      | Amount of pixels to scroll up per gesture.                                                                              |
 | `scrollDownAmount`  | `number`     | `-400`                     | Yes      | Amount of pixels to scroll down per gesture.                                                                            |
-| `onNextPage`        | `() => void` | `window.history.forward()` | Yes      | Triggered on next page gesture. Defaults to navigating forward in browser history.                                      |
-| `onPrevPage`        | `() => void` | `window.history.back()`    | Yes      | Triggered on previous page gesture. Defaults to navigating backward in browser history.                                 |
-| `cursorSensitivity` | `number`     | `3.0`                      | Yes      | Use to handle cursor speed                                                                                              |
+| `onNextPage`        | `() => void` | `router.forward()` | Yes      | Triggered on next page gesture. Defaults to navigating forward in browser history.                                      |
+| `onPrevPage`        | `() => void` | `router.back()`    | Yes      | Triggered on previous page gesture. Defaults to navigating backward in browser history.                                 |
+| `cursorSensitivity` | `number`     | `3.5`                      | Yes      | Use to handle cursor speed                                                                                              |
 | `fistHoldTime`      | `number`     | `2500`                     | Yes      | Duration (in milliseconds) the fist must be held before triggering a screenshot.                                        |
 
 ## ✅ Requirements
