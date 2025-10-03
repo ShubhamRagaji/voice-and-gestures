@@ -64,8 +64,6 @@ export default App;
 | `scrollDownAmount`  | `number`     | `-400`                     | Yes      | Amount of pixels to scroll down per gesture.                                                                            |
 | `onNextPage`        | `() => void` | `window.history.forward()` | Yes      | Triggered on next page gesture. Defaults to navigating forward in browser history.                                      |
 | `onPrevPage`        | `() => void` | `window.history.back()`    | Yes      | Triggered on previous page gesture. Defaults to navigating backward in browser history.                                 |
-| `showCursor`        | `boolean`    | `true`                     | Yes      | Show or hide the custom cursor.                                                                                         |
-| `customCursor`      | `ReactNode`  | `null`                     | Yes      | A custom React element (e.g., `<div>` or icon) to render as the gesture cursor. Works only when showCursor prop is true |
 | `cursorSensitivity` | `number`     | `3.0`                      | Yes      | Use to handle cursor speed                                                                                              |
 | `fistHoldTime`      | `number`     | `2500`                     | Yes      | Duration (in milliseconds) the fist must be held before triggering a screenshot.                                        |
 

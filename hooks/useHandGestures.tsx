@@ -24,14 +24,13 @@ export function useHandGestures({
   onPrevPage,
   scrollUpAmount = 400,
   scrollDownAmount = -400,
-  cursorSensitivity = 3.2,
+  cursorSensitivity = 3.5,
   fistHoldTime = 2500,
 }: GestureCallbacks) {
   // Refs for video and canvas
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const router = useRouter();
-  const showCursor = sessionStorage.getItem("showCursor") === "true";
 
   // Hand landmark model instance
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
@@ -104,13 +103,10 @@ export function useHandGestures({
   useEffect(() => {
     let animationId: number;
 
-    console.log(" if (showCursor) ", showCursor);
-    if (showCursor) {
-      // Target the existing cursor element
-      const cursorElement = document.getElementById("custom-cursor");
-      if (cursorElement && cursorElement instanceof HTMLDivElement) {
-        cursorElementRef.current = cursorElement;
-      }
+    // Target the existing cursor element
+    const cursorElement = document.getElementById("custom-cursor");
+    if (cursorElement && cursorElement instanceof HTMLDivElement) {
+      cursorElementRef.current = cursorElement;
     }
     // ---------------- INIT ----------------
     async function init() {
@@ -345,8 +341,6 @@ export function useHandGestures({
 
     // ---------------- CURSOR MOVEMENT ----------------
     function handleCursorMovement(lm: any) {
-      console.log("handleCurso", showCursor);
-      if (!showCursor) return;
       const indexTip = lm[8];
 
       // Direct mapping with sensitivity - simpler approach
